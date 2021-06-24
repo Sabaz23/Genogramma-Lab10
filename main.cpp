@@ -160,6 +160,28 @@ int main() {
         cin >> n2;
         graph::addRelCouple(n1,n2,g);
       }
+      break;
+      case 6:
+      {
+        Label n1,n2,n3;
+        cout << "Inserisci il nome del figlio" << endl;
+        cin >> n1;
+        cout << "Inserisci il nome del padre" << endl;
+        cin >> n2;
+        cout << "Inserisci il nome della madre" << endl;
+        cin >> n3;
+        graph::addRelChildToCouple(n1,n2,n3,g);
+      }
+      break;
+
+      case 9:
+      {
+        Label n;
+        cout << "Inserisci la persona da eliminare (attenzione: eliminerai anche i discendenti)" << endl;
+        cin >> n;
+        graph::deletePerson(n,g);
+      }
+      break;
       // Visualizzazione della mappa (grafo)
       case 11:
         cout << "\n\nLa mappa e' cosi' strutturata:\n";
