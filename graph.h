@@ -57,6 +57,10 @@ bool addRelMother(Label,Label, Graph&);
 
 bool addRelCouple(Label,Label,Graph&);
 
+bool addRelChildToCouple(Label, Label, Label, Graph&);
+
+void deletePerson(Label, Graph&);
+
 // Stampa la lista di adiacenza di un vertice
 list::List adjacentList(Label, const Graph&);
 
