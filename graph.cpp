@@ -81,6 +81,45 @@ bool isCoupled(Label name, const Graph& g)
   return false;
 }
 
+bool areCoupled(Label name, Label name2, const Graph&g)
+{
+  vertexNode* v1 = getVertex(name,g);
+  vertexNode* v2 = getVertex(name2,g);
+  if(v1==emptyGraph || v2==emptyGraph) return true;
+  halfEdgeNode* n = v1->adjList;
+  for(n;n != emptyHalfEdgeNode; n = n->next)
+    if(n->vertPtr->label == name2 && n->rel == 'C') return true;
+  return false;
+}
+
+
+bool isSonAlready(Label son, Label parent, const Graph& g)
+{
+  vertexNode* sonV = getVertex(son, g);
+  vertexNode* parentV = getVertex(parent, g);
+  if(sonV == emptyGraph || parentV == emptyGraph) return true;
+  halfEdgeNode* parentN = parentV->adjList;
+  for(parentN;parentN != emptyHalfEdgeNode; parentN = parentN->next)
+    if((parentN->rel == 'F' || parentN->rel == 'M') && parentN->vertPtr == sonV)  return true;
+  return false;
+}
+
+void deleteDescendants(Label name, const Graph& g)
+{
+  vertexNode* v = getVertex(name,g);
+  if(v == emptyGraph) return;
+  halfEdgeNode* n = v->adjList;
+  for(n;n != emptyHalfEdgeNode; n = n->next)
+  {
+    if(n->rel == 'M' || n->rel == 'F')
+    {
+      free(n->vertPtr);
+    }
+  }
+  free(n);
+
+}
+
 // Aggiunge il "mezzo edge" alla lista di adiacenza
 // Da usare solo se i vertici "from" e "to" sono presenti nel grafo
 void addHalfEdge(Label from, Label to, Relation w, Graph& g) {
@@ -303,8 +342,28 @@ bool graph::addRelCouple(Label from,Label to, Graph&g)
   return true;
 }
 
+bool graph::addRelChildToCouple(Label child, Label father, Label mother, Graph& g)
+{
+  if(isSonAlready(child,father,g) || isSonAlready(child,mother,g)) return false;
+  if(!areCoupled(father,mother,g)) return false;
 
+  addRelMother(mother,child,g);
+  addRelFather(father,child,g);
 
+  return true;
+}
+
+void graph::deletePerson(Label name, Graph& g) //DA RIVEDERE!
+{
+  vertexNode* v = getVertex(name,g);
+  if(v == emptyGraph) return;
+  //deleteDescendants(name,g);
+  graph::Graph x = g;
+  while(x->next != v) x=x->next;
+  x->next = v->next;
+  free(v);
+
+}
 
 // Restituisce true se il grafo e' vuoto, false altrimenti
 bool graph::isEmpty(const Graph& g)
@@ -386,8 +445,11 @@ void graph::findPath(Label v1, Label v2, list::List &path, int &len, const Graph
 /*******************************************************************************************************/
 // Stampa il grafo
 void printGraph(const graph::Graph& g) {
-  for (graph::Graph v = g; v != emptyGraph; v = v->next) {
-    cout << v->label << ": ";
+  cout << "G vale:" << endl;
+  cout << g << endl;
+  graph::Graph v = g;
+  for (v; v != emptyGraph; v = v->next) {
+    cout << v->label << ": "; //Questo fa crashare
     printAdjList(v->label, g);
   }
 }
