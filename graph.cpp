@@ -113,29 +113,29 @@ void deleteDescendants(Label name, const Graph& g)
   halfEdgeNode* tmp = new halfEdgeNode;
   for(v;v != emptyHalfEdgeNode; v = v->next)
   {
-  	if(v->label!=name)
-    	{
-  			for(n;n != emptyHalfEdgeNode; n = n->next)
-  			{
-  				if(n->next->vertPtr->label==name)
-    			//if(n->rel == 'M' || n->rel == 'F')
-      			{
-      				tmp=n->next;
-      				n->next=tmp->next;
-      				tmp->next=nullptr;//?
-      				delete tmp;
-        			//free(n->vertPtr);
-      			}
-    		}
-  		}
-	}
-	n=vlabel->adjList;
-	for(vlabel;vlabel != emptyHalfEdgeNode; vlabel = vlabel->next)
-	{
-		vlabel->adjList=vlabel->adjList->next;
-		n->next=nullptr;
-		free(n);
-	}
+    if(v->label!=name)
+    {
+      for(n;n != emptyHalfEdgeNode; n = n->next)
+      {
+  	if(n->next->vertPtr->label==name)
+    	//if(n->rel == 'M' || n->rel == 'F')
+      	{
+      	  tmp=n->next;
+      	  n->next=tmp->next;
+      	  tmp->next=nullptr;//?
+      	  delete tmp;
+       	  //free(n->vertPtr);
+      	}
+      }
+    }
+ }
+ n=vlabel->adjList;
+ for(vlabel;vlabel != emptyHalfEdgeNode; vlabel = vlabel->next)
+ {
+   vlabel->adjList=vlabel->adjList->next;
+   n->next=nullptr;
+   free(n);
+ }
 }
 
 // Aggiunge il "mezzo edge" alla lista di adiacenza
