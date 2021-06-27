@@ -28,7 +28,7 @@ const Graph emptyGraph = NULL;
 Graph createEmptyGraph();
 
 // Aggiunge nuovo vertice con etichetta la stringa. Fallisce se gia' presente
-bool addPerson(Label, Label, Label, Label, Graph&);
+bool addPerson(Label, char, Label, Label, Graph&);
 
 // Aggiunge nuovo arco tra i due nodi con etichette le due stringe e peso
 // l'intero. Fallisce se non sono presenti tutti e due i nodi o se arco
@@ -60,6 +60,8 @@ bool addRelCouple(Label,Label,Graph&);
 bool addRelChildToCouple(Label, Label, Label, Graph&);
 
 void deletePerson(Label, Graph&);
+
+Label isValid(Graph &);
 
 // Stampa la lista di adiacenza di un vertice
 list::List adjacentList(Label, const Graph&);
