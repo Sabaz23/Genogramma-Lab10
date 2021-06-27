@@ -75,8 +75,8 @@ int main() {
     // Se l'utente ha scelto "0" vuole uscire dal programma
     if (scelta == 0) break;
 
-    graph::Label name, name2, sex, birth, death;
-    char r;
+    graph::Label name, name2, birth, death;
+    char r,sex;
     graph::Relation rel;
 
     switch (scelta)
@@ -122,7 +122,8 @@ int main() {
 
       case 2:
       {
-        graph::Label name, sex, birth, death;
+        graph::Label name, birth, death;
+        char sex;
         cout << "Inserisci il nome, il sesso (M/F), la data di nascita (DD/MM/YYYY) e di morte (se non esiste inserire -) della persona:" << endl;
         cin >> name;
         cin >> sex;
@@ -173,13 +174,17 @@ int main() {
         graph::addRelChildToCouple(n1,n2,n3,g);
       }
       break;
-
       case 9:
       {
         Label n;
         cout << "Inserisci la persona da eliminare (attenzione: eliminerai anche i discendenti)" << endl;
         cin >> n;
         graph::deletePerson(n,g);
+      }
+      break;
+      case 10:
+      {
+        cout << graph::isValid(g) << endl;
       }
       break;
       // Visualizzazione della mappa (grafo)
