@@ -16,7 +16,7 @@ struct halfEdgeNode {
 // Un vertice è caratterizzato dall'etichetta, il puntatore alla lista dei vertici adiacenti, il puntatore al prossimo vertice e un booleano che indica se il nodo è già stato visitato (serve per implementare il cammino tra due città
 struct graph::vertexNode {
     Label label;
-    Label sex;
+    char sex;
     Label birth;
     Label death;
     halfEdgeNode *adjList;
@@ -42,6 +42,13 @@ vertexNode* getVertex(Label l, const Graph& g) {
   return emptyGraph; // non trovato
 }
 
+int getNumVertex(const Graph& g)
+{
+  vertexNode* v = g;
+  int cont=0;
+  for(v;v!=emptyGraph;v = v->next) cont++;
+  return cont;
+}
 // Ritorna true se il vertice e' presente nel grafo
 
 bool isVertexInGraph(Label l, const Graph& g) {
@@ -121,76 +128,81 @@ void deleteRelations(Label name, Graph &g)
     n = v->adjList;
     first = true;
 
-    //if(n==emptyHalfEdgeNode) continue;
-
-    while(n != emptyHalfEdgeNode)
+    while(n != emptyHalfEdgeNode)  //Scorre tutte le relazioni
       {
 
-        if(first)
+        if(first) //Se è la prima relazione
         {
-          if(v->adjList == emptyHalfEdgeNode) break;
-          if(v->adjList->vertPtr->label == name)
+          if(v->adjList == emptyHalfEdgeNode) break; //Se la adjlist è vuota, esco
+          if(v->adjList->vertPtr->label == name)  //Se il collegamento vertice-relazioni è quello che devo eliminare (la prima relazione)
           {
             tmp=v->adjList;
-            cout << " Sto eliminando la relazione " << tmp->vertPtr->label << " con " << v->label << " relazione: " << tmp->rel << " e' il primo! "<< endl;
             v->adjList = tmp->next;
             tmp->next = emptyHalfEdgeNode;
             delete tmp;
-            continue;
+            continue; //Ritorno all'inizio del ciclo (n non deve incrementare perchè salterebbe il controllo dell'elemento a cui ora punta)
           }
-          else
+          else //Se non è da eliminare la prima relazione
             {
-              first = false;
-              n = v->adjList;
-              continue;
+              first = false;  //Pongo first a false in modo da saltare questi controlli
+              n = v->adjList; //N diventa la prima relazione
+              continue; //Ricomincio il ciclo
             }
           }
 
-          if(n->next != NULL)
-              {
-                if(n->next->vertPtr->label == name)
+          if(n->next != NULL) //Se non sono all'ultimo elemento
+          {
+                if(n->next->vertPtr->label == name) //Controllo l'elemento successivo e in caso elimino
                   {
                     tmp=n->next;
-                    cout << " Sto eliminando la relazione " << tmp->vertPtr->label << " con " << v->label << " relazione: " << tmp->rel << endl;
                     n->next = tmp->next;
                     tmp->next = emptyHalfEdgeNode;
                     delete tmp;
-                    eliminato = true;
+                    eliminato = true; //Pongo eliminato a true in modo da ripetere il ciclo senza incrementare n (salterebbe un elemento)
                   }
-                /*else
-                  {
-                    tmp=n->next;
-                    cout << " Sto eliminando la relazione " << tmp->vertPtr->label << " con " << v->label << " relazione: " << tmp->rel << endl;
-                    v->adjList = emptyHalfEdgeNode;
-                    tmp->next = emptyHalfEdgeNode;
-                    delete tmp;
-                    //n = emptyHalfEdgeNode;
-              }*/
-            }
-          if(!eliminato)  n=n->next;
-          else eliminato = false;
+          }
 
-          if(n==NULL) break;
+          if(!eliminato)  n=n->next;  //Se non ho eliminato nulla posso continuare
+          else eliminato = false; //Altrimenti ripeto il ciclo senza incrementare (così controllo il nuovo elemento a cui è collegato n)
+
+          if(n==NULL) break;  //Se n è NULL, non devo ripetere il while
         }
-
-      /*for(n;n != emptyHalfEdgeNode; n = n->next)  //Scorre tutte le relazioni della Persona
-        {
-          //cout << "Sto controllando la relazione di " << v->label << " con " << n->vertPtr->label << " e la relazione e' " << n->rel << endl;
-
-          if(n->next != NULL)
-          {
-            if(n->next->vertPtr->label==name) //Se la prossima relazione punta il nome della persona che cerco
-      	     {
-      	        tmp=n->next;
-      	         n->next=tmp->next;
-      	         tmp->next=nullptr;//?
-      	         delete tmp; //Elimino
-      	        }
-            }
-        }*/
  }
 }
 
+bool deleteVertex(Label name, Graph& g)
+{
+
+  vertexNode* toDel = getVertex(name,g);
+  if(toDel == emptyGraph) return false;
+  vertexNode* v = g; // v punta alla testa
+  vertexNode* tmp = new vertexNode; //Nodo Temporaneo con relazioni vuoto
+
+  if(v == toDel) //Se il vertice da eliminare è il primo
+  {
+    tmp=v;
+    g = tmp->next;  //Pongo il grafo al successivo elemento rispetto a quello che devo eliminare
+    tmp->next = emptyGraph;
+    delete tmp;
+    return true;
+  }
+  else  //Se non è il primo
+  {
+    while(v != emptyGraph)  //Scorro tutto il grafo
+    {
+      if(v->next == toDel)  //Finchè trovo quello da eliminare
+      {
+        tmp=v->next;
+        v->next = tmp->next;
+        tmp->next = emptyGraph;
+        delete tmp;
+        return true;
+      }
+      v = v->next;
+    }
+  }
+  return false;
+}
 
 void deleteDescendants(Label name, Graph& g)
 {
@@ -198,22 +210,106 @@ void deleteDescendants(Label name, Graph& g)
   vertexNode* toDel = getVertex(name,g);
 
   if(toDel == emptyGraph) return;
+
   halfEdgeNode* n = toDel->adjList;
+  halfEdgeNode* aux = new halfEdgeNode;
 
-  while(n != emptyHalfEdgeNode)
+  while(n != emptyHalfEdgeNode) //Scorre tutte le relazioni del nodo da eliminare
   {
-    cout << "Sto controllando " << n->vertPtr->label << endl;
-    if(n->rel == 'F' || n->rel == 'M')
+    if(n->rel == 'F' || n->rel == 'M')  //Se sono discendenti
     {
-
-      deleteRelations(n->vertPtr->label,g);
-
-      //deleteVertex() qua gli passo n->vertPtr->label
+      aux = n->next; //Salva l'indirizzo del prossimo nodo
+      Label tmpName = n->vertPtr->label; //Salva il nome della persona da eliminare
+      deleteRelations(tmpName,g); //Qui elimina le relazioni
+      deleteVertex(tmpName, g); //Elimina i figli di phil
+      n = aux; //Se lo elimina torna l'indirizzo del prossimo nodo, se non ha eliminato comunque procede
     }
-    n = n->next;
+    else  n = n->next; //Altrimenti se non elimina nulla e scorre normalmente
   }
-  deleteRelations(name,g);
 }
+
+
+bool goodParents(const Graph& g)
+{
+  vertexNode* v = g;
+  halfEdgeNode* h = new halfEdgeNode;
+  for(v;v != emptyGraph; v = v->next)
+  {
+    h = v->adjList;
+    for(h; h != emptyHalfEdgeNode; h = h->next)
+    {
+      if(h->rel == v->sex) return false;  //Se la relazione (M)other è uguale al sesso (M)aschio o Se la relazione (F)ather è uguale al sesso (F)emmina
+    }
+  }
+  return true;
+}
+
+int parseDate(const Label date) { //Torna utile per convertire la data in un intero, per i confronti
+    int month,day,year;
+    day = stoi(date.substr(0,2));
+    month = stoi(date.substr(3,2));
+    year = stoi(date.substr(6,4));
+    return 10000 * year + 100 * month + day;
+}
+
+bool goodDate(const Graph& g)
+{
+  vertexNode* v = g;
+  for(v;v != emptyGraph; v = v->next)
+  {
+    if(v->death != "-")
+    {
+      if((parseDate(v->death))<(parseDate(v->birth))) return false; //Se la data di morte è più piccola di quella di nascita, ritorna false!
+    }
+  }
+  return true;
+}
+
+bool goodDescend(const Graph& g)
+{
+  vertexNode* v = g;
+  halfEdgeNode* h = new halfEdgeNode;
+  for(v;v != emptyGraph; v = v->next)
+  {
+    h = v->adjList;
+    for(h; h != emptyHalfEdgeNode; h = h->next)
+    {
+      if(h->rel == 'M' || h->rel == 'F')
+      {
+        if(parseDate(v->birth) > parseDate(h->vertPtr->birth)) return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool exists(Label name, const Graph &g)
+{
+  vertexNode* v = g;
+  halfEdgeNode* h = new halfEdgeNode;
+  for(v;v != emptyGraph; v = v->next)
+  {
+    h = v->adjList;
+    for(h;h != emptyHalfEdgeNode; h = h->next)
+    {
+      if(h->vertPtr->label == name) return true;
+    }
+  }
+  return false;
+}
+
+bool goodConnections(const Graph &g)
+{
+  vertexNode* v = g;
+  halfEdgeNode* h = new halfEdgeNode;
+  for(v;v != emptyGraph; v = v->next)
+  {
+    if(!exists(v->label,g)) return false;
+  }
+  return true;
+}
+
+
 
 // Aggiunge il "mezzo edge" alla lista di adiacenza
 // Da usare solo se i vertici "from" e "to" sono presenti nel grafo
@@ -232,12 +328,6 @@ void addHalfEdge(Label from, Label to, Relation w, Graph& g) {
     vNode->adjList = e;
   }
 }
-
-
-
-
-
-
 
 
 
@@ -306,6 +396,18 @@ bool findPathRec(vertexNode *here, vertexNode *to, list::List &path, int &len, c
     return false;
 }
 
+vertexNode* findOldestNotVisited(const Graph &g)
+{
+  vertexNode* v = g;
+  vertexNode* max = v;
+  for(v;v!=emptyGraph;v = v->next)
+  {
+    if(parseDate(v->birth)<parseDate(max->birth) && !v->visited) max = v;
+  }
+  max->visited = true;
+  return max;
+}
+
 /*******************************************************************************************************/
 // Grafo
 /*******************************************************************************************************/
@@ -317,7 +419,7 @@ Graph graph::createEmptyGraph()
 }
 
 //Fallisce se gia' presente
-bool graph::addPerson(Label n, Label s, Label d, Label d2, Graph& g) {
+bool graph::addPerson(Label n, char s, Label d, Label d2, Graph& g) {
   if (isVertexInGraph(n, g))
     return false;  // etichetta gia' presente
   // aggiungi nuovo vertice (in testa per comodita')
@@ -448,17 +550,54 @@ bool graph::addRelChildToCouple(Label child, Label father, Label mother, Graph& 
   return true;
 }
 
-void graph::deletePerson(Label name, Graph& g) //DA RIVEDERE!
+void graph::deletePerson(Label name, Graph& g)
 {
   vertexNode* v = getVertex(name,g);
   if(v == emptyGraph) return;
-  deleteDescendants(name,g);
-  //graph::Graph x = g;
-  //while(x->next != v) x=x->next;
-  //x->next = v->next;
-  //free(v);
+  deleteDescendants(name,g); //Elimina le relazioni dei discendenti (e i vertici dei discendenti)
+  deleteRelations(name,g); //Infine elimina le relazioni dove c'è phil
+  deleteVertex(name,g); //Ed elimina Phil
 
 }
+
+Label graph::isValid(Graph& g)
+{
+  //Per controllare che sia valido:
+  //1.La madre di una persona deve essere femmina e il padre maschio
+  if(goodParents(g))
+  {
+    if(goodDate(g))
+    {
+      if(goodDescend(g))
+      {
+        if(goodConnections(g))
+        {
+          return "Il grafo è valido!";
+        }
+        else
+        {
+          return "Grafo non valido! Il grafo è sconnesso!";
+        }
+      }
+      else
+      {
+        return "Grafo non valido a causa di un genitore più giovane della sua discendenza!";
+      }
+    }
+    else
+    {
+      return "Grafo non valido a cause di date di nascita e morte non corrette!";
+    }
+  }
+  else
+  {
+    return "Grafo non valido a causa dei parenti con genere non corretto!";
+  }
+  //2.La data di nascita di tutte le persone deve essere antecedente a quella di Morte
+  //3.La data di nascita di una persona deve essere precedente a quella di tutta la sua discendenza
+  //4.Il grafo non deve essere sconnesso
+}
+
 
 // Restituisce true se il grafo e' vuoto, false altrimenti
 bool graph::isEmpty(const Graph& g)
@@ -541,8 +680,9 @@ void graph::findPath(Label v1, Label v2, list::List &path, int &len, const Graph
 // Stampa il grafo
 void printGraph(const graph::Graph& g) {
   graph::Graph v = g;
-  for (v; v != emptyGraph; v = v->next) {
-    cout << v->label << ": "; //Questo fa crashare
-    printAdjList(v->label, g);
+  for (int i = 0; i < getNumVertex(g); i++) {
+    vertexNode* tmp = findOldestNotVisited(g);
+    cout << tmp->label << ": ";
+    printAdjList(tmp->label, g);
   }
 }
