@@ -104,38 +104,115 @@ bool isSonAlready(Label son, Label parent, const Graph& g)
   return false;
 }
 
-void deleteDescendants(Label name, const Graph& g)
+
+void deleteRelations(Label name, Graph &g)
 {
+  cout << "Name vale " << name << endl;
   vertexNode* vlabel = getVertex(name,g);
   if(vlabel == emptyGraph) return;
-  halfEdgeNode* n = g->adjList;
-  vertexNode* v= g;
-  halfEdgeNode* tmp = new halfEdgeNode;
-  for(v;v != emptyHalfEdgeNode; v = v->next)
+  halfEdgeNode* n = g->adjList; //n sono le relazioni della testa
+  vertexNode* v = g; // v punta alla testa
+  halfEdgeNode* tmp = new halfEdgeNode; //Nodo Temporaneo con relazioni vuoto
+  bool first = true;
+  bool eliminato = false;
+
+  for(v;v != emptyGraph; v = v->next) //scorre tutte le persone
   {
-    if(v->label!=name)
-    {
-      for(n;n != emptyHalfEdgeNode; n = n->next)
+    n = v->adjList;
+    first = true;
+
+    //if(n==emptyHalfEdgeNode) continue;
+
+    while(n != emptyHalfEdgeNode)
       {
-  	if(n->next->vertPtr->label==name)
-    	//if(n->rel == 'M' || n->rel == 'F')
-      	{
-      	  tmp=n->next;
-      	  n->next=tmp->next;
-      	  tmp->next=nullptr;//?
-      	  delete tmp;
-       	  //free(n->vertPtr);
-      	}
-      }
+
+        if(first)
+        {
+          if(v->adjList == emptyHalfEdgeNode) break;
+          if(v->adjList->vertPtr->label == name)
+          {
+            tmp=v->adjList;
+            cout << " Sto eliminando la relazione " << tmp->vertPtr->label << " con " << v->label << " relazione: " << tmp->rel << " e' il primo! "<< endl;
+            v->adjList = tmp->next;
+            tmp->next = emptyHalfEdgeNode;
+            delete tmp;
+            continue;
+          }
+          else
+            {
+              first = false;
+              n = v->adjList;
+              continue;
+            }
+          }
+
+          if(n->next != NULL)
+              {
+                if(n->next->vertPtr->label == name)
+                  {
+                    tmp=n->next;
+                    cout << " Sto eliminando la relazione " << tmp->vertPtr->label << " con " << v->label << " relazione: " << tmp->rel << endl;
+                    n->next = tmp->next;
+                    tmp->next = emptyHalfEdgeNode;
+                    delete tmp;
+                    eliminato = true;
+                  }
+                /*else
+                  {
+                    tmp=n->next;
+                    cout << " Sto eliminando la relazione " << tmp->vertPtr->label << " con " << v->label << " relazione: " << tmp->rel << endl;
+                    v->adjList = emptyHalfEdgeNode;
+                    tmp->next = emptyHalfEdgeNode;
+                    delete tmp;
+                    //n = emptyHalfEdgeNode;
+              }*/
+            }
+          if(!eliminato)  n=n->next;
+          else eliminato = false;
+
+          if(n==NULL) break;
+        }
+
+      /*for(n;n != emptyHalfEdgeNode; n = n->next)  //Scorre tutte le relazioni della Persona
+        {
+          //cout << "Sto controllando la relazione di " << v->label << " con " << n->vertPtr->label << " e la relazione e' " << n->rel << endl;
+
+          if(n->next != NULL)
+          {
+            if(n->next->vertPtr->label==name) //Se la prossima relazione punta il nome della persona che cerco
+      	     {
+      	        tmp=n->next;
+      	         n->next=tmp->next;
+      	         tmp->next=nullptr;//?
+      	         delete tmp; //Elimino
+      	        }
+            }
+        }*/
+ }
+}
+
+
+void deleteDescendants(Label name, Graph& g)
+{
+
+  vertexNode* toDel = getVertex(name,g);
+
+  if(toDel == emptyGraph) return;
+  halfEdgeNode* n = toDel->adjList;
+
+  while(n != emptyHalfEdgeNode)
+  {
+    cout << "Sto controllando " << n->vertPtr->label << endl;
+    if(n->rel == 'F' || n->rel == 'M')
+    {
+
+      deleteRelations(n->vertPtr->label,g);
+
+      //deleteVertex() qua gli passo n->vertPtr->label
     }
- }
- n=vlabel->adjList;
- for(vlabel;vlabel != emptyHalfEdgeNode; vlabel = vlabel->next)
- {
-   vlabel->adjList=vlabel->adjList->next;
-   n->next=nullptr;
-   free(n);
- }
+    n = n->next;
+  }
+  deleteRelations(name,g);
 }
 
 // Aggiunge il "mezzo edge" alla lista di adiacenza
@@ -375,11 +452,11 @@ void graph::deletePerson(Label name, Graph& g) //DA RIVEDERE!
 {
   vertexNode* v = getVertex(name,g);
   if(v == emptyGraph) return;
-  //deleteDescendants(name,g);
-  graph::Graph x = g;
-  while(x->next != v) x=x->next;
-  x->next = v->next;
-  free(v);
+  deleteDescendants(name,g);
+  //graph::Graph x = g;
+  //while(x->next != v) x=x->next;
+  //x->next = v->next;
+  //free(v);
 
 }
 
@@ -463,8 +540,6 @@ void graph::findPath(Label v1, Label v2, list::List &path, int &len, const Graph
 /*******************************************************************************************************/
 // Stampa il grafo
 void printGraph(const graph::Graph& g) {
-  cout << "G vale:" << endl;
-  cout << g << endl;
   graph::Graph v = g;
   for (v; v != emptyGraph; v = v->next) {
     cout << v->label << ": "; //Questo fa crashare
