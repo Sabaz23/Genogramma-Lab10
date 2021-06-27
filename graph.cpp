@@ -47,6 +47,7 @@ int getNumVertex(const Graph& g)
   vertexNode* v = g;
   int cont=0;
   for(v;v!=emptyGraph;v = v->next) cont++;
+  cout<<cont<<endl;
   return cont;
 }
 // Ritorna true se il vertice e' presente nel grafo
@@ -337,11 +338,37 @@ void addHalfEdge(Label from, Label to, Relation w, Graph& g) {
 // Stampa la lista di adiacenza
 void printAdjList(Label l, const Graph& g) {
  vertexNode* vNode = getVertex(l, g);
+ halfEdgeNode* n = new halfEdgeNode;
  if (vNode==emptyGraph) return;
- for (halfEdgeNode* n = vNode->adjList; n != emptyHalfEdgeNode; n = n->next) {
-    cout << "(" << n->vertPtr->label << ", " << n->rel << ")" << " ";
-  }
- cout << endl;
+ cout<<"---------------------------"<<endl;
+ cout<<"Nome: "<<vNode->label<<endl;
+ cout<<"Sesso: "<<vNode->sex<<endl;
+ if(vNode->sex=='F')
+ {
+ 	cout<<"Nata in data: "<<vNode->birth<<endl;
+ 	//if(vNode->death!='-') cout<<"Morta in data: "<<vNode->death<<endl;
+ 	cout<<"Morta in data: "<<vNode->death<<endl;
+ 	cout<<"Madre di: ";
+ 	for (n = vNode->adjList; n!= emptyHalfEdgeNode; n = n->next)
+ 	{
+ 		if(n->rel=='M') cout<<n->vertPtr->label<<" ";
+ 		else cout<<"\nIn coppia con: "<<n->vertPtr->label<<endl;
+ 	}
+ 	cout<<endl;
+ }
+ else 
+ {
+ 	cout<<"Nato in data: "<<vNode->birth<<endl;
+ 	//if(vNode->death!='-') cout<<"Morto in data: "<<vNode->death<<endl;
+ 	cout<<"Morto in data: "<<vNode->death<<endl;
+ 	cout<<"Padre di: ";
+ 	for (n = vNode->adjList; n!=emptyHalfEdgeNode; n = n->next)
+ 	{
+ 		if(n->rel=='F') cout<<n->vertPtr->label<<" ";
+ 		else cout<<"\nIn coppia con: "<<n->vertPtr->label<<endl;
+  	}
+  	cout << endl;
+ }
 }
 
 // Ritorna il numero di "mezzi edge"
@@ -399,10 +426,15 @@ bool findPathRec(vertexNode *here, vertexNode *to, list::List &path, int &len, c
 vertexNode* findOldestNotVisited(const Graph &g)
 {
   vertexNode* v = g;
+  while(v->visited==1)
+  	v=v->next;
   vertexNode* max = v;
+  v = g;
   for(v;v!=emptyGraph;v = v->next)
   {
+  	
     if(parseDate(v->birth)<parseDate(max->birth) && !v->visited) max = v;
+    //cout<<" ho visitanto:"<<v->label<<" "<<v->birth<<" "<<v->visited<<"max è:"<<max->birth<<endl;
   }
   max->visited = true;
   return max;
@@ -680,9 +712,10 @@ void graph::findPath(Label v1, Label v2, list::List &path, int &len, const Graph
 // Stampa il grafo
 void printGraph(const graph::Graph& g) {
   graph::Graph v = g;
-  for (int i = 0; i < getNumVertex(g); i++) {
+  int numVertex=getNumVertex(g);
+  for (int i = 0; i < numVertex; i++) {
     vertexNode* tmp = findOldestNotVisited(g);
-    cout << tmp->label << ": ";
+    //cout << tmp->label << ": ";
     printAdjList(tmp->label, g);
   }
 }
