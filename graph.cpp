@@ -6,14 +6,16 @@ using namespace graph;
 // Struct
 /*******************************************************************************************************/
 
-// Mezzo arco, non tiene il nodo sorgente
+// Struttura che contiene il puntatore alla persona, la relazione, e la prossima relazione
 struct halfEdgeNode {
   vertexNode *vertPtr;
   Relation rel; // relazione dell'arco
   halfEdgeNode* next; // puntatore al mezzo arco successivo
 };
 
-// Un vertice è caratterizzato dall'etichetta, il puntatore alla lista dei vertici adiacenti, il puntatore al prossimo vertice e un booleano che indica se il nodo è già stato visitato (serve per implementare il cammino tra due città
+/* Un vertice è caratterizzato dalle informazioni sulla Persona,
+il puntatore alla lista delle relazioni, il puntatore al prossimo vertice
+e un booleano che indica se il nodo è già stato visitato (utile per la stampa)*/
 struct graph::vertexNode {
     Label label;
     char sex;
@@ -21,7 +23,7 @@ struct graph::vertexNode {
     Label death;
     halfEdgeNode *adjList;
     vertexNode *next;
-    bool visited;      // marcatura se nodo visitato
+    bool visited;
 };
 
 /*******************************************************************************************************/
@@ -42,43 +44,46 @@ vertexNode* getVertex(Label l, const Graph& g) {
   return emptyGraph; // non trovato
 }
 
+//Ritorna il numero di vertici (persone) presenti nel genogramma
 int getNumVertex(const Graph& g)
 {
   vertexNode* v = g;
   int cont=0;
   for(v;v!=emptyGraph;v = v->next) cont++;
-  cout<<cont<<endl;
   return cont;
 }
-// Ritorna true se il vertice e' presente nel grafo
 
+// Ritorna true se il vertice e' presente nel grafo
 bool isVertexInGraph(Label l, const Graph& g) {
   return (getVertex(l, g)!=emptyGraph);
 }
 
-
-
-// Ritorna true se l'arco e' presente nel grafo
-bool isEdgeInGraph(Label from, Label to, const Graph& g) {
- vertexNode* vNode = getVertex(from, g);
- if (vNode == emptyGraph) return false;
- for (halfEdgeNode* n = vNode->adjList; n != emptyHalfEdgeNode; n = n->next) {
-    if (n->vertPtr->label == to ) return true;
+vertexNode* getYoungestDesc(vertexNode* v, Graph& g)
+{
+  halfEdgeNode* n = v->adjList;
+  while(n!=emptyHalfEdgeNode){  //Finchè non ho controllato tutte le relazioni
+    if(n->rel!='C') //Se il nodo che controllo è madre o padre
+    {
+      return getYoungestDesc(n->vertPtr,g); //Richiamo la funzione con il figlio e controllo lui
+    }
+    n=n->next;
   }
- return false;
+  if(n == emptyHalfEdgeNode) return v;  //Se arrivo alla fine senza aver trovato una relazione madre o padre, ritorno il nodo (il più giovane della discendenza)
 }
 
+//Ritorna true se le due persone hanno già la relazione r, false altrimenti
 bool gotRelAlready(Label from, Label to, Relation r, const Graph& g)
 {
   vertexNode* v = getVertex(from,g);
   vertexNode* v2 = getVertex(to,g);
-  if(v==emptyGraph || v2==emptyGraph) return true;
+  if(v==emptyGraph || v2==emptyGraph) return true;  //Ritorna true come se avessero già la relazione, per evitare di andare avanti
   halfEdgeNode* n = v->adjList;
-  for(n;n != emptyHalfEdgeNode; n = n->next)
-    if(n->vertPtr == v2 && n->rel == r) return true;
-  return false;
+  for(n;n != emptyHalfEdgeNode; n = n->next)  //Scorre tutte le relazioni di una delle due persone
+    if(n->vertPtr == v2 && n->rel == r) return true;  //Se il nome coincide con la seconda persona e la relazione è quella che stiamo cercando, ritorna true
+  return false; //Altrimenti arriva in fondo e ritorna false
 }
 
+//Ritora true se la persona è già in una coppia
 bool isCoupled(Label name, const Graph& g)
 {
   vertexNode* v = getVertex(name,g);
@@ -89,6 +94,7 @@ bool isCoupled(Label name, const Graph& g)
   return false;
 }
 
+//Ritorna true se due persone sono in coppia tra di loro
 bool areCoupled(Label name, Label name2, const Graph&g)
 {
   vertexNode* v1 = getVertex(name,g);
@@ -100,22 +106,21 @@ bool areCoupled(Label name, Label name2, const Graph&g)
   return false;
 }
 
-
+//Ritorna true se una persona è già figlia di un altra
 bool isSonAlready(Label son, Label parent, const Graph& g)
 {
   vertexNode* sonV = getVertex(son, g);
   vertexNode* parentV = getVertex(parent, g);
   if(sonV == emptyGraph || parentV == emptyGraph) return true;
   halfEdgeNode* parentN = parentV->adjList;
-  for(parentN;parentN != emptyHalfEdgeNode; parentN = parentN->next)
-    if((parentN->rel == 'F' || parentN->rel == 'M') && parentN->vertPtr == sonV)  return true;
+  for(parentN;parentN != emptyHalfEdgeNode; parentN = parentN->next)  //Scorro le relazioni del genitore
+    if((parentN->rel == 'F' || parentN->rel == 'M') && parentN->vertPtr == sonV)  return true;  //Se nelle relazioni è presente "Father" o "Mother" con la persona che sto controllando, riotrno true
   return false;
 }
 
-
+//Elimina le relazioni della persona data in tutto il grafo
 void deleteRelations(Label name, Graph &g)
 {
-  cout << "Name vale " << name << endl;
   vertexNode* vlabel = getVertex(name,g);
   if(vlabel == emptyGraph) return;
   halfEdgeNode* n = g->adjList; //n sono le relazioni della testa
@@ -220,16 +225,21 @@ void deleteDescendants(Label name, Graph& g)
     if(n->rel == 'F' || n->rel == 'M')  //Se sono discendenti
     {
       aux = n->next; //Salva l'indirizzo del prossimo nodo
-      Label tmpName = n->vertPtr->label; //Salva il nome della persona da eliminare
-      deleteRelations(tmpName,g); //Qui elimina le relazioni
-      deleteVertex(tmpName, g); //Elimina i figli di phil
+      Label tmpName;
+      vertexNode* tmpV = getVertex(tmpName,g);
+      do{
+        tmpV = getYoungestDesc(toDel,g);
+        tmpName = tmpV->label; //Salva il nome della persona della discendenza piu giovane
+        deleteRelations(tmpName,g); //Qui elimina le relazioni della persona piu giovane
+        deleteVertex(tmpName, g); //E qui elimina il vertice della persona più giovane
+      }while(tmpV != toDel);  //Continua ad eliminare fino a che il puntatore temporaneo è uguale al puntatore alla persona da eliminare
       n = aux; //Se lo elimina torna l'indirizzo del prossimo nodo, se non ha eliminato comunque procede
     }
     else  n = n->next; //Altrimenti se non elimina nulla e scorre normalmente
   }
 }
 
-
+//Funzione che verifica se i padri sono maschi e le madri femmine
 bool goodParents(const Graph& g)
 {
   vertexNode* v = g;
@@ -245,7 +255,8 @@ bool goodParents(const Graph& g)
   return true;
 }
 
-int parseDate(const Label date) { //Torna utile per convertire la data in un intero, per i confronti
+//Funzione che torna utile per convertire la data in un intero, per i confronti
+int parseDate(const Label date) {
     int month,day,year;
     day = stoi(date.substr(0,2));
     month = stoi(date.substr(3,2));
@@ -253,12 +264,13 @@ int parseDate(const Label date) { //Torna utile per convertire la data in un int
     return 10000 * year + 100 * month + day;
 }
 
+//Funzione che verifica se le dati di morte e nascita sono valide
 bool goodDate(const Graph& g)
 {
   vertexNode* v = g;
   for(v;v != emptyGraph; v = v->next)
   {
-    if(v->death != "-")
+    if(v->death != "-") //Se esiste una data di morte
     {
       if((parseDate(v->death))<(parseDate(v->birth))) return false; //Se la data di morte è più piccola di quella di nascita, ritorna false!
     }
@@ -266,6 +278,7 @@ bool goodDate(const Graph& g)
   return true;
 }
 
+//Verifica se la data di nascita di un padre o madre è più giovane di quella della prole (su tutti gli elementi del grafo)
 bool goodDescend(const Graph& g)
 {
   vertexNode* v = g;
@@ -275,15 +288,16 @@ bool goodDescend(const Graph& g)
     h = v->adjList;
     for(h; h != emptyHalfEdgeNode; h = h->next)
     {
-      if(h->rel == 'M' || h->rel == 'F')
+      if(h->rel == 'M' || h->rel == 'F')  //Se è padre o madre
       {
-        if(parseDate(v->birth) > parseDate(h->vertPtr->birth)) return false;
+        if(parseDate(v->birth) > parseDate(h->vertPtr->birth)) return false;  //Verifica se la loro data di nascita è precedente a quella dei figli
       }
     }
   }
   return true;
 }
 
+//Verifica se esiste una data persona tra le relazioni
 bool exists(Label name, const Graph &g)
 {
   vertexNode* v = g;
@@ -299,43 +313,24 @@ bool exists(Label name, const Graph &g)
   return false;
 }
 
+//Verifica che il grafo non sia sconnesso
 bool goodConnections(const Graph &g)
 {
   vertexNode* v = g;
   halfEdgeNode* h = new halfEdgeNode;
   for(v;v != emptyGraph; v = v->next)
   {
-    if(!exists(v->label,g)) return false;
+    if(!exists(v->label,g)) return false; //Se non sono presenti relazioni con il nome della persona tra tutte le persone, vuol dire che il nodo non è collegato a nulla (di conseguenza, il grafo è sconnesso)
   }
   return true;
 }
 
 
 
-// Aggiunge il "mezzo edge" alla lista di adiacenza
-// Da usare solo se i vertici "from" e "to" sono presenti nel grafo
-void addHalfEdge(Label from, Label to, Relation w, Graph& g) {
-  halfEdgeNode *e = new halfEdgeNode;
-  e->vertPtr = getVertex(to, g);
-  e->rel = w;
-
-  vertexNode* vNode = getVertex(from, g);
-
-  if (vNode->adjList == emptyHalfEdgeNode) {
-    vNode->adjList = e;
-    e->next = emptyHalfEdgeNode;
-  } else {
-    e->next = vNode->adjList;
-    vNode->adjList = e;
-  }
-}
 
 
 
-
-
-
-// Stampa la lista di adiacenza
+// Stampa il genogramma
 void printAdjList(Label l, const Graph& g) {
  vertexNode* vNode = getVertex(l, g);
  halfEdgeNode* n = new halfEdgeNode;
@@ -349,14 +344,14 @@ void printAdjList(Label l, const Graph& g) {
  	//if(vNode->death!='-') cout<<"Morta in data: "<<vNode->death<<endl;
  	cout<<"Morta in data: "<<vNode->death<<endl;
  	cout<<"Madre di: ";
- 	for (n = vNode->adjList; n!= emptyHalfEdgeNode; n = n->next)
+ 	for (n = vNode->adjList; n!= emptyHalfEdgeNode; n = n->next)  //Da cambiare, si bugga con genitori di sesso sbagliato
  	{
- 		if(n->rel=='M') cout<<n->vertPtr->label<<" ";
+ 		if(n->rel != 'C') cout<<n->vertPtr->label<<" ";
  		else cout<<"\nIn coppia con: "<<n->vertPtr->label<<endl;
  	}
  	cout<<endl;
  }
- else 
+ else
  {
  	cout<<"Nato in data: "<<vNode->birth<<endl;
  	//if(vNode->death!='-') cout<<"Morto in data: "<<vNode->death<<endl;
@@ -364,7 +359,7 @@ void printAdjList(Label l, const Graph& g) {
  	cout<<"Padre di: ";
  	for (n = vNode->adjList; n!=emptyHalfEdgeNode; n = n->next)
  	{
- 		if(n->rel=='F') cout<<n->vertPtr->label<<" ";
+ 		if(n->rel != 'C') cout<<n->vertPtr->label<<" ";
  		else cout<<"\nIn coppia con: "<<n->vertPtr->label<<endl;
   	}
   	cout << endl;
@@ -380,64 +375,27 @@ int numHalfEdges(halfEdgeNode *head) {
   return num;
 }
 
-bool findPathRec(vertexNode *here, vertexNode *to, list::List &path, int &len, const Graph& g) {
-
-    // si suppone che "here" sia diverso da "to"
-    // (controllo eseguito dal chiamante)
-
-    // marca nodo corrente come visitato
-    here->visited = true;
-
-    // esamino ciascuno dei nodi adiacenti...
-    for (halfEdgeNode* ee = here->adjList; ee != emptyHalfEdgeNode; ee = ee->next) {
-
-        // se gia' visitato passo oltre
-        if (ee->vertPtr->visited)
-            continue;
-
-        // se e' la destinazione aggiorno il cammino con l'ultima tratta,
-        // aggiorno la lunghezza totale, e torno al chiamante
-        if (ee->vertPtr->label == to->label) {
-            list::addFront(ee->vertPtr->label,path);
-            len += ee->rel;
-            return true;
-        }
-
-        // provo a inoltrare il cammino verso quel nodo (chiamata ricorsiva)
-        bool res = findPathRec(ee->vertPtr, to, path, len, g);
-
-        // se ce l'ha fatta, aggiungo "here" al cammino, aggiorno la
-        // lunghezza totale, e ritorno al chiamante
-        if (res) {
-            list::addFront(ee->vertPtr->label,path);
-            len += ee->rel;
-            return true;
-        }
-
-        // se invece non ce l'ha fatta,
-        // passo al prossimo nodo adiacente e provo da li'
-    }
-
-    // evidentemente nessuno dei nodi adiacenti mi ha portato a destinazione.
-    // Segnalo al chiamante che da "here" non si va alla destinazione
-    return false;
-}
-
 vertexNode* findOldestNotVisited(const Graph &g)
 {
   vertexNode* v = g;
-  while(v->visited==1)
+  while(v->visited)
   	v=v->next;
   vertexNode* max = v;
   v = g;
   for(v;v!=emptyGraph;v = v->next)
   {
-  	
+
     if(parseDate(v->birth)<parseDate(max->birth) && !v->visited) max = v;
     //cout<<" ho visitanto:"<<v->label<<" "<<v->birth<<" "<<v->visited<<"max è:"<<max->birth<<endl;
   }
   max->visited = true;
   return max;
+}
+
+void resetVisited(const Graph& g)
+{
+  vertexNode* v = g;
+  for(v;v != emptyGraph; v = v->next) v->visited = false;
 }
 
 /*******************************************************************************************************/
@@ -472,21 +430,7 @@ bool graph::addPerson(Label n, char s, Label d, Label d2, Graph& g) {
   return true;
 }
 
-// Aggiunge un arco di peso "w" tra i nodi con etichetta "f" e "t"
-/*bool graph::addEdge(Label from, Label to, Relation w, Graph& g) {
-  // non permetto arco tra un nodo ed esso stesso
-  if (from == to)
-    return false;
-  // entrambi i nodi devono gia' esistere nel grafo
-  if (!isVertexInGraph(from, g) || !isVertexInGraph(to, g))
-    return false;
-  // tra i due nodi non deve gia' esserci una relazione
-  if (gotRelAlready(from,w,g) || gotRelAlready(to,w,g))
-    return false;
-  // tutto ok, procediamo
-  addHalfEdge(from, to, w, g);
-  return true;
-}*/
+
 
 bool graph::addRelMother(Label from,Label to, Graph& g)
 {
@@ -598,17 +542,20 @@ Label graph::isValid(Graph& g)
   //1.La madre di una persona deve essere femmina e il padre maschio
   if(goodParents(g))
   {
+    //2.La data di nascita di tutte le persone deve essere antecedente a quella di Morte
     if(goodDate(g))
     {
+      //3.La data di nascita di una persona deve essere precedente a quella di tutta la sua discendenza
       if(goodDescend(g))
       {
+        //4.Il grafo non deve essere sconnesso
         if(goodConnections(g))
         {
-          return "Il grafo è valido!";
+          return "Il grafo e' valido!";
         }
         else
         {
-          return "Grafo non valido! Il grafo è sconnesso!";
+          return "Grafo non valido! Il grafo e' sconnesso!";
         }
       }
       else
@@ -625,11 +572,24 @@ Label graph::isValid(Graph& g)
   {
     return "Grafo non valido a causa dei parenti con genere non corretto!";
   }
-  //2.La data di nascita di tutte le persone deve essere antecedente a quella di Morte
-  //3.La data di nascita di una persona deve essere precedente a quella di tutta la sua discendenza
-  //4.Il grafo non deve essere sconnesso
+
+
+
 }
 
+void graph::setBirthDate(Label name, Label date, Graph& g)
+{
+  if(!isVertexInGraph(name,g)) return;
+  vertexNode* v = getVertex(name, g);
+  v->birth = date;
+}
+
+void graph::setDeathDate(Label name, Label date, Graph& g)
+{
+  if(!isVertexInGraph(name,g)) return;
+  vertexNode* v = getVertex(name, g);
+  v->death = date;
+}
 
 // Restituisce true se il grafo e' vuoto, false altrimenti
 bool graph::isEmpty(const Graph& g)
@@ -637,77 +597,7 @@ bool graph::isEmpty(const Graph& g)
    return (g==emptyGraph);
 }
 
-// Ritorna il numero di vertici del grafo
-int graph::numVertices(const Graph& g){
- int num = 0;
- for (Graph v = g; v != emptyGraph; v = v->next) {
-   num++;
- }
- return num;
-}
 
-// Ritorna il numero di archi del grafo
-int graph::numEdges(const Graph& g){
- int num = 0;
- for (Graph v = g; v != emptyGraph; v = v->next) {
-   num = num + numHalfEdges(v->adjList);
- }
- return (int)num/2; // sono sempre pari per costruzione!
-}
-
-// Calcola e ritorna (nel secondo parametro) il grado del nodo. Fallisce
-// se il nodo non esiste
-bool graph::nodeDegree(Label l, int& degree, const Graph& g) {
-  if (!isVertexInGraph(l,g)) return false;
-  vertexNode* vNode = getVertex(l, g);
-  degree = numHalfEdges(vNode->adjList);
-  return true;
-}
-
-// Verifica se i due vertici v1 e v2 sono adiacenti (ovvero se esiste un arco)
-bool graph::areAdjacent(Label v1, Label v2, const Graph& g) {
-  return (isEdgeInGraph(v1, v2, g));
-}
-
-// Restituisce la lista di adiacenza di un vertice
-list::List graph::adjacentList(Label v1, const Graph& g) {
-  list::List lst = list::createEmpty();
-  vertexNode* vNode = getVertex(v1, g);
-  if (vNode==emptyGraph) return lst;
-  for (halfEdgeNode* n = vNode->adjList; n != emptyHalfEdgeNode; n = n->next) {
-    list::addFront(n->vertPtr->label,lst);
-  }
-  return lst;
-}
-
-// Ritorna cammino tra v1 e v2
-// il cammino ammino da "v1" a "v2" alla fine sara' in "path"
-// e la lunghezza sara' in "len".
-// Si assume che il chiamante fornisca inizialmente un cammino vuoto.
-//
-// La funzione rappresenta una variante della visita DFS
-
-void graph::findPath(Label v1, Label v2, list::List &path, int &len, const Graph& g) {
-
-   vertexNode* from = getVertex(v1, g);
-   vertexNode* to = getVertex(v2, g);
-
-    //se partenza e arrivo concidono, oppure partenza e/o arrivo non esistono,
-    // allora cammino rimane vuoto e si finisce qui
-    if (from == to || from == emptyGraph || to == emptyGraph)
-        return;
-
-    // preliminari: marco tutti i nodi/vertici come non visitati
-    for (graph::Graph v = g; v != emptyGraph; v = v->next) {
-          v->visited = false;
-    }
-
-    // inizia la ricorsione
-    len = 0;
-    findPathRec(from, to, path, len, g);
-
-    return;
-}
 /*******************************************************************************************************/
 // Stampa il grafo
 void printGraph(const graph::Graph& g) {
@@ -718,4 +608,5 @@ void printGraph(const graph::Graph& g) {
     //cout << tmp->label << ": ";
     printAdjList(tmp->label, g);
   }
+  resetVisited(g);
 }
