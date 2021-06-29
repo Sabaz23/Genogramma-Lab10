@@ -6,8 +6,6 @@
 #include <fstream>
 #include <string>
 
-#include "list-array.h"
-
 
 using namespace std;
 
@@ -23,54 +21,41 @@ typedef vertexNode* Graph; // un grafo è identificato dal puntatore al primo ve
 
 const Graph emptyGraph = NULL;
 
-
 // createEmptyGraph restituisce il grafo vuoto
 Graph createEmptyGraph();
 
 // Aggiunge nuovo vertice con etichetta la stringa. Fallisce se gia' presente
 bool addPerson(Label, char, Label, Label, Graph&);
 
-// Aggiunge nuovo arco tra i due nodi con etichette le due stringe e peso
-// l'intero. Fallisce se non sono presenti tutti e due i nodi o se arco
-// tra i due e' gia' presente.
-bool addEdge(Label, Label, Relation, Graph&);
-
 // Restituisce true se il grafo e' vuoto, false altrimenti
 bool isEmpty(const Graph&);
 
-// Ritorna il numero di vertici del grafo
-int numVertices(const Graph&);
-
-// Ritorna il numero di archi del grafo
-int numEdges(const Graph&);
-
-// Calcola e ritorna (nel secondo parametro) il grado del nodo. Fallisce
-// se nodo non esiste
-bool nodeDegree(Label, int&, const Graph&);
-
-// Verifica se due vertici sono adiacenti (ovvero se esiste un arco)
-bool areAdjacent(Label, Label, const Graph&);
-
+// Restituisce true se l'aggiunta relazione padre è andata a buon fine, false altrimenti
 bool addRelFather(Label,Label, Graph&);
 
+// Restituisce true se l'aggiunta relazione madre è andata a buon fine, false altrimenti
 bool addRelMother(Label,Label, Graph&);
 
+// Restituisce true se l'aggiunta relazione coppia è andata a buon fine, false altrimenti
 bool addRelCouple(Label,Label,Graph&);
 
+// Restituisce true se l'aggiunta relazione figlio ad una coppia è andata a buon fine, false altrimenti
 bool addRelChildToCouple(Label, Label, Label, Graph&);
 
+// Elimina una persona
 void deletePerson(Label, Graph&);
 
+// Imposta una data di nascita
+void setBirthDate(Label, Label, Graph&);
+
+// Imposta una data di morte
+void setDeathDate(Label, Label, Graph&);
+
+// Restituisce la stringa con il motivo di grafo non valido/la stringa con scritto che è valido
 Label isValid(Graph &);
 
-// Stampa la lista di adiacenza di un vertice
-list::List adjacentList(Label, const Graph&);
-
-// Calcola, se esiste, un cammino tra due vertici
-void findPath(Label, Label, list::List &, int &, const Graph& g);
 }
 
 
 /* Funzioni che non caratterizzano il TDD Graph, ma che servono per input/output */
-//tree::Tree readFromFile(string);
 void printGraph(const graph::Graph&);
