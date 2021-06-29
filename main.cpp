@@ -45,7 +45,6 @@ int menu()
         cout << "\nScelta non valida\n";
         cin.clear();
         cin.ignore();
-// Questa si rende necessaria a causa di un bug di glibc, prima o poi sparira'
         clearerr(stdin);
         continue;
     }
@@ -57,16 +56,13 @@ int menu()
 int main() {
 
   graph::Graph g = graph::createEmptyGraph();
-  list::List adjlst, path;
 
   string nomefile;
   int scelta = 0;
-  int len; // lunghezza cammino tra due citta'
 
 
   //Ciclo su scelta,
   // si interrompe quando l'utente sceglie di uscire (scelta==0)
-
   while (true) {
 
     // Visualizzazione menu e acquisizione scelta
@@ -82,10 +78,9 @@ int main() {
     switch (scelta)
     {
 
-      // Lettura della mappa da file (grafo)
+      // Lettura del genogramma da file (grafo)
       case 1: {
-        g = graph::createEmptyGraph(); // serve nel caso in cui il grafo g e' gia' stato inserito (ri-inserimento)
-                                       // occorrerebbe fare anche un destroy, cosi' si ha memory leak!
+        g = graph::createEmptyGraph(); // serve nel caso in cui il grafo g e' gia' stato inserito (ri-inserimento), anche se così facendo si ha un memory leak
         cout << "Inserisci il nome del file\n";
         cin >> nomefile;
         ifstream ifs(nomefile.c_str()); // apertura di uno stream associato ad un file, in lettura
@@ -93,33 +88,30 @@ int main() {
         else {
          for(;;) {
           ifs >> r;
-          if (r == 'P')
+          if (r == 'P') //Se l'inizio è P allora la riga deve aggiungere una persona
           {
             ifs >> name;
             ifs >> sex;
             ifs >> birth;
             ifs >> death;
-            //cout << "Questa e' una persona : " << " Nome: " << name << " sesso: " << sex <<  " Nascita: " << birth << " Morte: " << death << endl;
             graph::addPerson(name,sex,birth,death, g);
           }
-          else if (r == 'R')
+          else if (r == 'R')  //Se l'inizio è R allora deve aggiungere una relazione
           {
             ifs >> name;
             ifs >> rel;
             ifs >> name2;
-            //cout << name << " " << rel << " " << name2 << endl;
             if(rel == 'M') graph::addRelMother(name,name2,g);
             if(rel == 'F') graph::addRelFather(name,name2,g);
             if(rel == 'C') graph::addRelCouple(name,name2,g);
-            //cout << "Questa e' una relazione " << " Persona1: " << name << " Persona2: " << name2 << " Relazione: " << rel << endl;
           }
-          ifs.peek();
+          ifs.peek(); //Reso necessario per l'ultima riga
           if(ifs.eof()) break;
          }
         }
        }
       break;
-
+      //Aggiunta di una persona
       case 2:
       {
         graph::Label name, birth, death;
@@ -132,6 +124,7 @@ int main() {
         graph::addPerson(name,sex,birth,death, g);
       }
         break;
+      //Aggiunta di relazione madre
       case 3:
         {
           Label n1,n2;
@@ -142,6 +135,7 @@ int main() {
           graph::addRelMother(n1,n2,g);
         }
         break;
+      //Aggiunta di relazione padre
       case 4:
         {
           Label n1,n2;
@@ -152,6 +146,7 @@ int main() {
           graph::addRelFather(n1,n2,g);
         }
           break;
+      //Aggiunta di relazione coppia
       case 5:
       {
         Label n1,n2;
@@ -162,6 +157,7 @@ int main() {
         graph::addRelCouple(n1,n2,g);
       }
       break;
+      //Aggiunta di figlio ad una coppia
       case 6:
       {
         Label n1,n2,n3;
@@ -174,6 +170,27 @@ int main() {
         graph::addRelChildToCouple(n1,n2,n3,g);
       }
       break;
+      //Aggiornamento data di nascita
+      case 7:
+      {
+        Label name, date;
+        cout << "Inserisci la persona e la data di nascita (DD/MM/YYYY):" << endl;
+        cin >> name;
+        cin >> date;
+        graph::setBirthDate(name,date,g);
+      }
+      break;
+      //Aggiornamento data di morte
+      case 8:
+      {
+        Label name, date;
+        cout << "Inserisci la persona e la data di morte (DD/MM/YYYY):" << endl;
+        cin >> name;
+        cin >> date;
+        graph::setDeathDate(name,date,g);
+      }
+      break;
+      //Eliminazione persona
       case 9:
       {
         Label n;
@@ -182,112 +199,18 @@ int main() {
         graph::deletePerson(n,g);
       }
       break;
+      //Controllo grafo valido
       case 10:
       {
         cout << graph::isValid(g) << endl;
       }
       break;
-      // Visualizzazione della mappa (grafo)
+      // Visualizzazione del genogramma (grafo)
       case 11:
-        cout << "\n\nLa mappa e' cosi' strutturata:\n";
+        cout << "\n\nIl genogramma e' il seguente:\n";
         printGraph(g);
       break;
-/*
-      // Inserimento di nuova citta' (vertice)
-      case 4:
-        cout << "\nInserisci etichetta della citta' da inserire\n";
-        cin >> s1;
-        if (!graph::addPerson(s1, g))
-	    cout << "\nCitta' gia' presente nel grafo, nodo non inserito\n";
-      break;
-
-      // Inserimento di una nuova strada tra due citta'
-      case 5:
-        while (true) {
-          cout << "\nInserisci prima citta'\n";
-          cin >> s1;
-          cout << "\nInserisci seconda citta'\n";
-          cin >> s2;
-          cout << "\nInserisci la distanza tra le due citta'\n";
-          cin >> n;
-          if (cin.good()) break;
-          cout << "\nDati non validi, riprovare\n";
-          cin.clear();
-          cin.ignore();
-// Questa si rende necessaria a causa di un bug di glibc, prima o poi sparira'
-          clearerr(stdin);
-          continue;
-        }
-        if (!graph::addEdge(s1, s2, n, g))
-	   cout << "\nCitta' non presenti nella mappa o strada tra le due citta' gia' presente nella mappa, strada non inserita\n";
-      break;
-
-      // Determinazione del numero di citta'
-      case 6:
-        cout << "\nNumero di citta': " << graph::numVertices(g) << "\n";
-      break;
-
-      // Determinazione del numero di strade nella mappa
-      case 7:
-        cout << "\nNumero delle strade nella mappa: " << graph::numEdges(g) << "\n";
-      break;
-
-      // Determinazione del grado (ovvero strade che portano a) di una citta'
-      case 8:
-        cout << "\nInserisci citta' di cui vuoi calcolare il grado\n";
-        cin >> s1;
-        if (graph::nodeDegree(s1,degree,g))
-  	  cout << "\nGrado della citta': " << degree << "\n";
-        else
-	  cout << "\nCitta' non presente nella mappa\n";
-      break;
-
-      // Verifica dell'adiacenza tra due citta'
-      case 9:
-        cout << "\nInserisci prima citta'\n";
-        cin >> s1;
-        cout << "\nInserisci seconda citta'\n";
-        cin >> s2;
-        if (graph::areAdjacent(s1,s2,g))
-          cout << "\nLe citta' sono adiacenti\n";
-        else
-          cout << "\nLe citta' NON sono adiacenti\n";
-      break;
-
-      // Stampa citta' adiacenti
-      case 10:
-        cout << "\nInserisci etichetta della citta'\n";
-        cin >> s1;
-        adjlst = graph::adjacentList(s1, g);
-        if (list::isEmpty(adjlst))
-           cout << "\nLa lista di adiacenza e' vuota (motivo: l'etichetta e' quella di una citta' senza strade incidenti oppure non e' presente nel grafo)\n";
-        else {
-           cout << "\nLe citta' adiacenti ad " << s1 << " sono";
-           printList(adjlst);
-        }
-      break;
-
-      // Calcolo di un cammino tra due citta'
-      case 11:
-        len = 0;
-        path = list::createEmpty(); // reinizializzo il cammino
-        cout << "\nInserisci citta' di partenza\n";
-        cin >> s1;
-        cout << "\nInserisci citta' di arrivo\n";
-        cin >> s2;
-        graph::findPath(s1,s2,path,len,g);
-        if (len == 0)
-           cout << "Nessun cammino trovato tra " << s1 << " e " << s2 << endl;
-        else {
-                cout << "Trovato un cammino lungo km " << len << endl;
-                cout << s1 << " :: ";
-                printList(path);
-              }
-       break;
-       */
     }
-
   }
-
   return 0;
 }
